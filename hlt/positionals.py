@@ -39,7 +39,25 @@ class Direction:
             return commands.STAY_STILL
         else:
             raise IndexError
-
+    @staticmethod
+    def convertStr(direction):
+        """
+        Converts from this direction tuple notation to the engine's string notation
+        :param direction: the direction in this notation
+        :return: The character equivalent for the game engine
+        """
+        if direction == commands.NORTH:
+            return Direction.North
+        if direction == commands.SOUTH:
+            return  Direction.South
+        if direction == commands.EAST:
+            return Direction.East
+        if direction == commands.WEST:
+            return Direction.West
+        else:# direction == commands.STAY_STILL:
+            return Direction.Still
+        #else:
+            #raise IndexError
     @staticmethod
     def invert(direction):
         """

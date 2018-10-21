@@ -37,7 +37,7 @@ def getShipMove(ship,sy):
     best = 0
     amount = 900
 
-    if game_map[game_map.normalize(ship.position)].halite_amount < constants.MAX_HALITE / 50 and (ship.halite_amount < amount ):
+    if game_map[game_map.normalize(ship.position)].halite_amount < constants.MAX_HALITE / 40 and (ship.halite_amount < amount ):
         for i in Direction.get_all_cardinals():
             if(game_map[ship.position.directional_offset(i)].is_occupied == False):
                 bestSpot.append(game_map[ship.position.directional_offset(i)])
