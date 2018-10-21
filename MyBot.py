@@ -4,6 +4,7 @@
 # Import the Halite SDK, which will let you interact with the game.
 import hlt
 
+from hlt import Position
 # This library contains constant values.
 from hlt import constants
 
@@ -30,8 +31,44 @@ game.ready("MyPythonBot")
 #   Here, you log here your id, which you can always fetch from the game object by using my_id.
 logging.info("Successfully created bot! My Player ID is {}.".format(game.my_id))
 
-""" <<<Game Loop>>> """
+#Gets ships best move
+def getShipMove(ship,sy):
+    bestSpot = []
+    best = 0
+    amount = 300
 
+    if game_map[game_map.normalize(ship.position)].halite_amount < constants.MAX_HALITE / 15 and (ship.halite_amount < amount ):
+        for i in Direction.get_all_cardinals():
+            if(game_map[ship.position.directional_offset(i)].is_occupied == False):
+                bestSpot.append(game_map[ship.position.directional_offset(i)])
+
+        for i in bestSpot:
+            if(i.halite_amount > best):
+                
+                    #bestDir = game_map.naive_navigate(ship, i.position)
+                    best = i.halite_amount
+                    bestDir = game_map.get_unsafe_moves(ship.position, i.position)[0]
+
+        if best == 0:
+            bestDir = "o"#random.choice(["n", "s","e","w"])
+
+        command_queue.append((ship.move(bestDir)))
+        #returnCommand = (ship.move(bestDir))
+    else:
+        if ship.is_full or ship.halite_amount > amount:
+            #command_queue.append(game_map.get_unsafe_moves(ship.position, Shipyard)[0])
+            command_queue.append(ship.move(game_map.naive_navigate(ship, Shipyard )))
+        else:
+            command_queue.append(ship.stay_still())
+
+    game_map[ship.position].mark_unsafe(ship)
+
+
+
+
+Shipyard = Position(8, 16)
+
+""" <<<Game Loop>>> """
 while True:
     # This loop handles each turn of the game. The game object changes every turn, and you refresh that state by
     #   running update_frame().
@@ -39,20 +76,20 @@ while True:
     # You extract player metadata and the updated map metadata here for convenience.
     me = game.me
     game_map = game.game_map
-
+    
     # A command queue holds all the commands you will run this turn. You build this list up and submit it at the
     #   end of the turn.
     command_queue = []
-
+    
     for ship in me.get_ships():
         # For each of your ships, move randomly if the ship is on a low halite location or the ship is full.
         #   Else, collect halite.
-        if game_map[ship.position].halite_amount < constants.MAX_HALITE / 10 or ship.is_full:
-            command_queue.append(
-                ship.move(
-                    random.choice([ Direction.North, Direction.South, Direction.East, Direction.West ])))
-        else:
-            command_queue.append(ship.stay_still())
+        
+        if game.turn_number == 2 or game.turn_number == 1 :
+            Shipyard = ship.position
+        #command_queue.append(getShipMove(ship))
+        getShipMove(ship, Shipyard)
+
 
     # If the game is in the first 200 turns and you have enough halite, spawn a ship.
     # Don't spawn a ship if you currently have a ship at port, though - the ships will collide.
