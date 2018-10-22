@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-# Python 3.6
-
 # Import the Halite SDK, which will let you interact with the game.
 import hlt
 
@@ -30,36 +27,14 @@ game.ready("MyPythonBot")
 # Now that your bot is initialized, save a message to yourself in the log file with some important information.
 #   Here, you log here your id, which you can always fetch from the game object by using my_id.
 logging.info("Successfully created bot! My Player ID is {}.".format(game.my_id))
-# get high halite areas
-def getTargetAreas(ship):
-    targetAmnt = 1000
-    amnt = 0
-    for places in ship.position.get_surrounding_cardinals():
-        amnt += game_map[places].halite_amount
-    if amnt > targetAmnt:
-        for i in ship.position.get_surrounding_cardinals():
-            targetArea.append(i)
 
-    cleanPlaces()
-
-def cleanPlaces():
-    index = 0
-    if(len(targetArea) > 0):
-        for place in targetArea:
-            if game_map[place].halite_amount < 50:
-                try:
-                    targetArea.remove(place)
-                except ValueError:
-                    pass
-            index += 1
 #Gets ships best move
 def getShipMove(ship,sy):
     bestSpot = []
     best = 0
     amount = 820
-    
-    #< constants.MAX_HALITE / 35
-    if game_map[game_map.normalize(ship.position)].halite_amount == 0 and (ship.halite_amount < amount ) or game_map[me.shipyard].position == ship.position:
+
+    if game_map[game_map.normalize(ship.position)].halite_amount < constants.MAX_HALITE / 35 and (ship.halite_amount < amount ):
         for i in Direction.get_all_cardinals():
             if(game_map[ship.position.directional_offset(i)].is_occupied == False):
                 bestSpot.append(game_map[ship.position.directional_offset(i)])
@@ -72,15 +47,7 @@ def getShipMove(ship,sy):
                     bestDir = game_map.get_unsafe_moves(ship.position, i.position)[0]
         
         if best < 50:
-            if len(targetArea) == 0:
-                bestDir = Direction.convertStr(random.choice(["n","s","e","w"]))
-            else: 
-                closest = targetArea[0]
-                for i in  targetArea:
-                    if game_map.calculate_distance(ship.position, i) < game_map.calculate_distance(ship.position, closest):
-                        closest = i
-                bestDir = game_map.naive_navigate(ship, i)
-
+            bestDir = Direction.convertStr(random.choice(["n", "s","e","w"]))
         place = game_map[ship.position.directional_offset((bestDir))].position
         inPicked = False
         for i in placepicked:
@@ -133,7 +100,6 @@ while True:
     
     # A command queue holds all the commands you will run this turn. You build this list up and submit it at the
     #   end of the turn.
-    targetArea = []
     command_queue = []
     placepicked = []
     placepicked.clear()
@@ -141,7 +107,7 @@ while True:
     for ship in me.get_ships():
         # For each of your ships, move randomly if the ship is on a low halite location or the ship is full.
         #   Else, collect halite.
-        getTargetAreas(ship)
+        
         if game.turn_number == 2 or game.turn_number == 1 :
             Shipyard = ship.position
         #command_queue.append(getShipMove(ship))
@@ -150,10 +116,9 @@ while True:
         #print("picked: " + str(i) +"\n")
     # If the game is in the first 200 turns and you have enough halite, spawn a ship.
     # Don't spawn a ship if you currently have a ship at port, though - the ships will collide.
-    if (game.turn_number < 230 and me.halite_amount >= constants.SHIP_COST * 1.2 and not game_map[me.shipyard].is_occupied) and game_map[me.shipyard].position not in placepicked:
+    if (game.turn_number < 210 and me.halite_amount >= constants.SHIP_COST and not game_map[me.shipyard].is_occupied):
     #if( me.halite_amount >= constants.SHIP_COST() and not game_map[me.shipyard].is_occupied):
         command_queue.append(me.shipyard.spawn())
 
     # Send your moves back to the game environment, ending this turn.
     game.end_turn(command_queue)
- 
