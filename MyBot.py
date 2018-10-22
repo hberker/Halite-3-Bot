@@ -35,9 +35,9 @@ logging.info("Successfully created bot! My Player ID is {}.".format(game.my_id))
 def getShipMove(ship,sy):
     bestSpot = []
     best = 0
-    amount = 900
+    amount = 820
 
-    if game_map[game_map.normalize(ship.position)].halite_amount < constants.MAX_HALITE / 30 and (ship.halite_amount < amount ):
+    if game_map[game_map.normalize(ship.position)].halite_amount < constants.MAX_HALITE / 37 and (ship.halite_amount < amount ):
         for i in Direction.get_all_cardinals():
             if(game_map[ship.position.directional_offset(i)].is_occupied == False):
                 bestSpot.append(game_map[ship.position.directional_offset(i)])
@@ -119,7 +119,7 @@ while True:
         #print("picked: " + str(i) +"\n")
     # If the game is in the first 200 turns and you have enough halite, spawn a ship.
     # Don't spawn a ship if you currently have a ship at port, though - the ships will collide.
-    if game.turn_number <= 200 and me.halite_amount >= constants.SHIP_COST and not game_map[me.shipyard].is_occupied:
+    if (game.turn_number <= 100 and me.halite_amount >= constants.SHIP_COST and not game_map[me.shipyard].is_occupied):
         command_queue.append(me.shipyard.spawn())
 
     # Send your moves back to the game environment, ending this turn.
