@@ -37,7 +37,7 @@ def getShipMove(ship,sy):
     best = 0
     amount = 900
 
-    if game_map[game_map.normalize(ship.position)].halite_amount < constants.MAX_HALITE / 40 and (ship.halite_amount < amount ):
+    if game_map[game_map.normalize(ship.position)].halite_amount < constants.MAX_HALITE / 30 and (ship.halite_amount < amount ):
         for i in Direction.get_all_cardinals():
             if(game_map[ship.position.directional_offset(i)].is_occupied == False):
                 bestSpot.append(game_map[ship.position.directional_offset(i)])
@@ -48,20 +48,44 @@ def getShipMove(ship,sy):
                     #bestDir = game_map.naive_navigate(ship, i.position)
                     best = i.halite_amount
                     bestDir = game_map.get_unsafe_moves(ship.position, i.position)[0]
+        
+        if best < 50:
+            bestDir = Direction.convertStr(random.choice(["n", "s","e","w"]))
+        place = game_map[ship.position.directional_offset((bestDir))].position
+        inPicked = False
+        for i in placepicked:
+            if (i.__eq__(place)):
+                inPicked = True
+        if inPicked == False and game_map[ship.position.directional_offset(bestDir)].is_occupied == False:
+            placepicked.append(ship.position.directional_offset(bestDir))
+            command_queue.append((ship.move(bestDir)))
+        else:
+            placepicked.append(ship.position)
 
-        if best == 0:
-            bestDir = "o"#random.choice(["n", "s","e","w"])
+            command_queue.append(ship.stay_still())
 
-        command_queue.append((ship.move(bestDir)))
         #returnCommand = (ship.move(bestDir))
     else:
         if ship.is_full or ship.halite_amount > amount:
             #command_queue.append(game_map.get_unsafe_moves(ship.position, Shipyard)[0])
-            command_queue.append(ship.move(game_map.naive_navigate(ship, Shipyard )))
+            placeVal = game_map[ship.position.directional_offset(game_map.get_unsafe_moves(ship.position, Shipyard)[0])].position
+            inPicked = False
+            for e in placepicked:
+                if (placeVal.__eq__(e)):
+                    inPicked = True
+
+            if inPicked == True:
+                command_queue.append(ship.stay_still())
+                placepicked.append(ship.position)
+            else:
+                command_queue.append(ship.move(game_map.naive_navigate(ship, Shipyard)))
+                placepicked.append(placeVal) 
         else:
             command_queue.append(ship.stay_still())
+            placepicked.append(ship.position)
 
-    game_map[ship.position].mark_unsafe(ship)
+
+    #game_map[ship.position].mark_unsafe(ship)
 
 
 
@@ -80,6 +104,8 @@ while True:
     # A command queue holds all the commands you will run this turn. You build this list up and submit it at the
     #   end of the turn.
     command_queue = []
+    placepicked = []
+    placepicked.clear()
     
     for ship in me.get_ships():
         # For each of your ships, move randomly if the ship is on a low halite location or the ship is full.
@@ -89,8 +115,8 @@ while True:
             Shipyard = ship.position
         #command_queue.append(getShipMove(ship))
         getShipMove(ship, Shipyard)
-
-
+    #for i in placepicked:
+        #print("picked: " + str(i) +"\n")
     # If the game is in the first 200 turns and you have enough halite, spawn a ship.
     # Don't spawn a ship if you currently have a ship at port, though - the ships will collide.
     if game.turn_number <= 200 and me.halite_amount >= constants.SHIP_COST and not game_map[me.shipyard].is_occupied:
