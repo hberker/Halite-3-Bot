@@ -10,7 +10,7 @@ from hlt import constants
 
 # This library contains direction metadata to better interface with the game.
 from hlt.positionals import Direction
-
+from hlt.positionals import commands
 # This library allows you to generate random numbers.
 import random
 
@@ -31,56 +31,107 @@ game.ready("MyPythonBot")
 #   Here, you log here your id, which you can always fetch from the game object by using my_id.
 logging.info("Successfully created bot! My Player ID is {}.".format(game.my_id))
 # get high halite areas
-def getTargetAreas(ship):
-    targetAmnt = 1000
-    amnt = 0
+def getTargetAreas(ship, targetArea):
     for places in ship.position.get_surrounding_cardinals():
-        amnt += game_map[places].halite_amount
-    if amnt > targetAmnt:
-        for i in ship.position.get_surrounding_cardinals():
-            targetArea.append(i)
+        if game_map[places].halite_amount > 100 and not places.__eq__(Shipyard):
+            targetArea.append(game_map[places].position)
+    if len(targetArea) > 0: 
+        cleanPlaces(targetArea)
 
-    cleanPlaces()
+def getClosestSpot(ship):
+    possible = []
+    cleanPlaces(targetArea)
+    for i in targetArea:   
+        if i != ship.position:
+            pickDir = game_map.get_unsafe_moves(ship.position, i)[0]
+            if ((pickDir).__ne__(Direction.Still) ) and (ship.position.__ne__(i)) and game_map[i].halite_amount > 0:
+                possible.append(i)
+    
+    if len(possible) > 0:
+        closest = possible[0]
+        for i in possible:
+            if game_map.calculate_distance(ship.position, i) < game_map.calculate_distance(ship.position, closest):   
+                if  game_map.get_unsafe_moves(ship.position, i)[0] != Direction.Still:
+                    closest = i
+        
+        return  Direction.convert(game_map.get_unsafe_moves(ship.position, closest)[0])
+    else:
+        for i in Direction.get_all_cardinals():
+            if(game_map[ship.position.directional_offset(i)].is_occupied == False):
+                return Direction.convert(game_map.get_unsafe_moves(ship.position, ship.position.directional_offset(i))[0])
+        
 
-def cleanPlaces():
+def cleanPlaces(targetArea):
     index = 0
-    if(len(targetArea) > 0):
-        for place in targetArea:
-            if game_map[place].halite_amount < 50:
-                try:
-                    targetArea.remove(place)
-                except ValueError:
-                    pass
+    temp = []
+    for place in targetArea:
+        
+        if game_map[place].halite_amount > 50 and  game_map[place].is_occupied == False:
+            try:
+                if place not in temp:
+                    temp.append(place)
+            except ValueError:
+                pass
             index += 1
+    targetArea = temp
 #Gets ships best move
 def getShipMove(ship,sy):
+    cleanPlaces(targetArea)
     bestSpot = []
     best = 0
     amount = 820
-    
+    options = 0
+    if ship.position == Shipyard:
+        openSpot = False
+        for i in Direction.get_all_cardinals():
+            if(game_map[ship.position.directional_offset(i)].is_occupied == False):
+                openSpot = True
+
+        if openSpot == False:
+            bestDir = Direction.North
+            placepicked.append(ship.position.directional_offset(bestDir))
+            command_queue.append(ship.move(bestDir))
+            return 0
+
+
     #< constants.MAX_HALITE / 35
-    if game_map[game_map.normalize(ship.position)].halite_amount == 0 and (ship.halite_amount < amount ) or game_map[me.shipyard].position == ship.position:
+    if (game_map[ship.position].halite_amount == 0 and (ship.halite_amount < amount )) or (Shipyard.__eq__(ship.position)):
+        #print("WOOOOOOLK")
         for i in Direction.get_all_cardinals():
             if(game_map[ship.position.directional_offset(i)].is_occupied == False):
                 bestSpot.append(game_map[ship.position.directional_offset(i)])
-
+                options +=1
         for i in bestSpot:
-            if(i.halite_amount > best):
+            if(i.halite_amount >= best):
                 
                     #bestDir = game_map.naive_navigate(ship, i.position)
                     best = i.halite_amount
                     bestDir = game_map.get_unsafe_moves(ship.position, i.position)[0]
-        
+            
         if best < 50:
-            if len(targetArea) == 0:
-                bestDir = Direction.convertStr(random.choice(["n","s","e","w"]))
-            else: 
-                closest = targetArea[0]
-                for i in  targetArea:
-                    if game_map.calculate_distance(ship.position, i) < game_map.calculate_distance(ship.position, closest):
-                        closest = i
-                bestDir = game_map.naive_navigate(ship, i)
-
+            if len(targetArea) == 0 :
+                for i in Direction.get_all_cardinals():
+                    found = False
+                    if(not found and game_map[ship.position.directional_offset(i)].is_occupied == False and game_map[ship.position.directional_offset(i)].position.__ne__(game_map[me.shipyard].position)):
+                        bestDir = (i)
+                        found = True
+                if found == False:
+                    bestDir = (0,0)
+                placepicked.append(ship.position.directional_offset(bestDir))
+                command_queue.append(ship.move(bestDir))
+                return 0
+            else:
+                
+                
+                #return 0 
+                bestDir = Direction.convertStr(getClosestSpot(ship))
+                if game_map[ship.position.directional_offset(bestDir)].is_occupied == False:
+                    placepicked.append(ship.position.directional_offset(bestDir))
+                    command_queue.append(ship.move(bestDir))
+                    return 0
+                bestDir = (0,0)
+        #else:
+            #print(str(bestDir) + str(ship.position))
         place = game_map[ship.position.directional_offset((bestDir))].position
         inPicked = False
         for i in placepicked:
@@ -89,10 +140,22 @@ def getShipMove(ship,sy):
         if inPicked == False and game_map[ship.position.directional_offset(bestDir)].is_occupied == False:
             placepicked.append(ship.position.directional_offset(bestDir))
             command_queue.append((ship.move(bestDir)))
+            return 0
         else:
-            placepicked.append(ship.position)
+            isFound = False
+            bestDir = (0,0)
+            for i in Direction.get_all_cardinals():
+                if(game_map[ship.position.directional_offset(i)].is_occupied == False) and ((game_map[ship.position.directional_offset(i)].position in placepicked) == False):
+                    bestDir = (game_map.get_unsafe_moves(ship.position, ship.position.directional_offset(i))[0])
+                    isFound = True
+                    placepicked.append(ship.position.directional_offset(bestDir))
+                    command_queue.append(ship.move(bestDir))
+                    return 0
 
-            command_queue.append(ship.stay_still())
+            if isFound == False:
+                command_queue.append(ship.stay_still())
+                placepicked.append(ship.position)
+                return 0
 
         #returnCommand = (ship.move(bestDir))
     else:
@@ -105,14 +168,42 @@ def getShipMove(ship,sy):
                     inPicked = True
 
             if inPicked == True:
-                command_queue.append(ship.stay_still())
-                placepicked.append(ship.position)
+                isFound = False
+                bestDir = (0,0)
+                for i in Direction.get_all_cardinals():
+                    if(game_map[ship.position.directional_offset(i)].is_occupied == False) and ((game_map[ship.position.directional_offset(i)].position in placepicked) == False):
+                        bestDir = (game_map.get_unsafe_moves(ship.position, ship.position.directional_offset(i))[0])
+                        isFound = True
+                        placepicked.append(ship.position.directional_offset(bestDir))
+                        command_queue.append(ship.move(bestDir))
+                        return 0
+                
+                ##command_queue.append(ship.stay_still())
+                ##placepicked.append(ship.position)
+                ##return 0
+
             else:
                 command_queue.append(ship.move(game_map.naive_navigate(ship, Shipyard)))
                 placepicked.append(placeVal) 
+                return 0
+
         else:
-            command_queue.append(ship.stay_still())
-            placepicked.append(ship.position)
+            if game_map[ship.position].halite_amount > 0:
+                command_queue.append(ship.stay_still())
+                placepicked.append(ship.position)
+                return 0
+            else:
+                isFound = False
+                bestDir = (0,0)
+                for i in Direction.get_all_cardinals():
+                    if(game_map[ship.position.directional_offset(i)].is_occupied == False) and ((game_map[ship.position.directional_offset(i)].position in placepicked) == False):
+                        bestDir = (game_map.get_unsafe_moves(ship.position, ship.position.directional_offset(i))[0])
+                        isFound = True
+                placepicked.append(ship.position.directional_offset(bestDir))
+                command_queue.append(ship.move(bestDir))
+                return 0
+
+
 
 
     #game_map[ship.position].mark_unsafe(ship)
@@ -121,6 +212,7 @@ def getShipMove(ship,sy):
 
 
 Shipyard = Position(8, 16)
+targetArea = []
 
 """ <<<Game Loop>>> """
 while True:
@@ -133,7 +225,6 @@ while True:
     
     # A command queue holds all the commands you will run this turn. You build this list up and submit it at the
     #   end of the turn.
-    targetArea = []
     command_queue = []
     placepicked = []
     placepicked.clear()
@@ -141,7 +232,7 @@ while True:
     for ship in me.get_ships():
         # For each of your ships, move randomly if the ship is on a low halite location or the ship is full.
         #   Else, collect halite.
-        getTargetAreas(ship)
+        getTargetAreas(ship, targetArea)
         if game.turn_number == 2 or game.turn_number == 1 :
             Shipyard = ship.position
         #command_queue.append(getShipMove(ship))
