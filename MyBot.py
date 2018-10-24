@@ -44,7 +44,7 @@ def getClosestSpot(ship):
     for i in targetArea:   
         if i != ship.position:
             pickDir = game_map.get_unsafe_moves(ship.position, i)[0]
-            if ((pickDir).__ne__(Direction.Still) ) and (ship.position.__ne__(i)) and game_map[i].halite_amount > 0:
+            if ((pickDir).__ne__(Direction.Still) ) and (ship.position.__ne__(i)) and game_map[i].halite_amount > 100:
                 possible.append(i)
     
     if len(possible) > 0:
@@ -103,18 +103,19 @@ def getShipMove(ship,sy):
                 options +=1
         for i in bestSpot:
             if(i.halite_amount >= best):
-                
                     #bestDir = game_map.naive_navigate(ship, i.position)
                     best = i.halite_amount
                     bestDir = game_map.get_unsafe_moves(ship.position, i.position)[0]
-            
-        if best < 50:
+        if  best < 100 :
             if len(targetArea) == 0 :
+                pos = []
                 for i in Direction.get_all_cardinals():
                     found = False
-                    if(not found and game_map[ship.position.directional_offset(i)].is_occupied == False and game_map[ship.position.directional_offset(i)].position.__ne__(game_map[me.shipyard].position)):
-                        bestDir = (i)
+                    if(game_map[ship.position.directional_offset(i)].is_occupied == False and game_map[ship.position.directional_offset(i)].position.__ne__(game_map[me.shipyard].position)):
+                        pos.append(i)
+                        #bestDir = (i)
                         found = True
+                bestDir = random.choice(pos)
                 if found == False:
                     bestDir = (0,0)
                 placepicked.append(ship.position.directional_offset(bestDir))
@@ -122,16 +123,13 @@ def getShipMove(ship,sy):
                 return 0
             else:
                 
-                
-                #return 0 
                 bestDir = Direction.convertStr(getClosestSpot(ship))
-                if game_map[ship.position.directional_offset(bestDir)].is_occupied == False:
+                if game_map[ship.position.directional_offset(bestDir)].is_occupied == False and not game_map[ship.position.directional_offset(bestDir)].position in placepicked:
                     placepicked.append(ship.position.directional_offset(bestDir))
                     command_queue.append(ship.move(bestDir))
                     return 0
                 bestDir = (0,0)
-        #else:
-            #print(str(bestDir) + str(ship.position))
+
         place = game_map[ship.position.directional_offset((bestDir))].position
         inPicked = False
         for i in placepicked:
@@ -139,7 +137,7 @@ def getShipMove(ship,sy):
                 inPicked = True
         if inPicked == False and game_map[ship.position.directional_offset(bestDir)].is_occupied == False:
             placepicked.append(ship.position.directional_offset(bestDir))
-            command_queue.append((ship.move(bestDir)))
+            command_queue.append((ship.move(bestDir))) 
             return 0
         else:
             isFound = False
@@ -238,10 +236,10 @@ while True:
         #command_queue.append(getShipMove(ship))
         getShipMove(ship, Shipyard)
     #for i in placepicked:
-        #print("picked: " + str(i) +"\n")
+        #print("picked: " + str(i) +"\n")    230
     # If the game is in the first 200 turns and you have enough halite, spawn a ship.
     # Don't spawn a ship if you currently have a ship at port, though - the ships will collide.
-    if (game.turn_number < 230 and me.halite_amount >= constants.SHIP_COST * 1.2 and not game_map[me.shipyard].is_occupied) and game_map[me.shipyard].position not in placepicked:
+    if (len(me.get_ships()) < 20 and game.turn_number < 230 and me.halite_amount >= constants.SHIP_COST * 1.2 and not game_map[me.shipyard].is_occupied) and game_map[me.shipyard].position not in placepicked:
     #if( me.halite_amount >= constants.SHIP_COST() and not game_map[me.shipyard].is_occupied):
         command_queue.append(me.shipyard.spawn())
 
