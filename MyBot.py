@@ -31,6 +31,25 @@ game.ready("MyPythonBot")
 #   Here, you log here your id, which you can always fetch from the game object by using my_id.
 logging.info("Successfully created bot! My Player ID is {}.".format(game.my_id))
 # get high halite areas
+
+def endGame(ship):
+    Dir = game_map.get_unsafe_moves(ship.position, game_map[me.shipyard].position)
+    #print(Dir)
+    moveDir = Direction.Still
+    if len(Dir) > 0:
+        
+        if (ship.position.directional_offset(Dir[0])).__eq__(game_map[me.shipyard].position):
+            
+            moveDir = game_map.get_unsafe_moves(ship.position, game_map[me.shipyard].position)[0]
+            #print(moveDir)
+        else:
+            moveDir = game_map.naive_navigate(ship, game_map[me.shipyard].position)
+    command_queue.append(ship.move(Direction.convert(moveDir)))
+    return 0
+
+
+
+
 def getTargetAreas(ship, targetArea):
     for places in ship.position.get_surrounding_cardinals():
         if game_map[places].halite_amount > 100 and not places.__eq__(Shipyard):
@@ -79,7 +98,7 @@ def getShipMove(ship,sy):
     cleanPlaces(targetArea)
     bestSpot = []
     best = 0
-    amount = 820
+    amount = 700
     options = 0
     if ship.position == Shipyard:
         openSpot = False
@@ -95,7 +114,7 @@ def getShipMove(ship,sy):
 
 
     #< constants.MAX_HALITE / 35
-    if (game_map[ship.position].halite_amount == 0 and (ship.halite_amount < amount )) or (Shipyard.__eq__(ship.position)):
+    if (game_map[ship.position].halite_amount <= 50 and (ship.halite_amount < amount )) or (Shipyard.__eq__(ship.position)):
         #print("WOOOOOOLK")
         for i in Direction.get_all_cardinals():
             if(game_map[ship.position.directional_offset(i)].is_occupied == False):
@@ -232,14 +251,16 @@ while True:
         #   Else, collect halite.
         getTargetAreas(ship, targetArea)
         if game.turn_number == 2 or game.turn_number == 1 :
-            Shipyard = ship.position
-        #command_queue.append(getShipMove(ship))
-        getShipMove(ship, Shipyard)
+                Shipyard = ship.position
+        if game.turn_number >390 and len(me.get_ships()) > 1:
+            endGame(ship)
+        else:
+            getShipMove(ship, Shipyard)
     #for i in placepicked:
         #print("picked: " + str(i) +"\n")    230
     # If the game is in the first 200 turns and you have enough halite, spawn a ship.
     # Don't spawn a ship if you currently have a ship at port, though - the ships will collide.
-    if (len(me.get_ships()) < 20 and game.turn_number < 230 and me.halite_amount >= constants.SHIP_COST * 1.2 and not game_map[me.shipyard].is_occupied) and game_map[me.shipyard].position not in placepicked:
+    if (len(me.get_ships()) < 15 and game.turn_number < 200 and me.halite_amount >= constants.SHIP_COST * 1.5 and not game_map[me.shipyard].is_occupied) and game_map[me.shipyard].position not in placepicked:
     #if( me.halite_amount >= constants.SHIP_COST() and not game_map[me.shipyard].is_occupied):
         command_queue.append(me.shipyard.spawn())
 
