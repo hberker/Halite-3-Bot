@@ -228,7 +228,7 @@ def getShipMove(ship,sy):
 
 
 
-Shipyard = Position(8, 16)
+Shipyard =  game_map[me.shipyard].position#Position(8, 16)
 targetArea = []
 
 """ <<<Game Loop>>> """
@@ -250,9 +250,8 @@ while True:
         # For each of your ships, move randomly if the ship is on a low halite location or the ship is full.
         #   Else, collect halite.
         getTargetAreas(ship, targetArea)
-        if game.turn_number == 2 or game.turn_number == 1 :
-                Shipyard = ship.position
-        if game.turn_number >390 and len(me.get_ships()) > 1:
+        
+        if constants.MAX_TURNS - 5 > game.turn_number and len(me.get_ships()) > 1:
             endGame(ship)
         else:
             getShipMove(ship, Shipyard)
