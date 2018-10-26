@@ -1,5 +1,5 @@
 # Starter Kit
-
+Halite starter README.md
 ## Halite III starter kit components
 * MyBot.{extension}, a starter bot outline
 * /hlt directory, which contains modifiable helper functions for your bot
